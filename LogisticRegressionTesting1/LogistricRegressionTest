@@ -1,0 +1,89 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+def normalize(X):
+    mu = np.mean(X, axis=0)
+    sigma = np.std(X, axis=0)
+    X = (X - mu) / sigma
+    return [X, mu, sigma]
+
+
+def sigmoid(Z):
+    return 1 / ( 1 + np.exp(-Z) )
+
+
+def costAndGrad(theta, X, y):
+    #assuming X is m * n+1      theta is 1 * n+1
+    temp = np.matmul( X , theta.T)
+    h = sigmoid( temp )
+    cost = (-1 / m) * np.sum(y * np.log(h) + (1-y) * (np.log(1-h)))
+    grad = np.sum((h - y) * X, axis=0)
+    grad = (1 / m) * grad
+    grad = np.array([grad])
+    return [cost, grad]
+
+
+def gradientDescent(initialTheta, X, y, alpha, noOfIterations):
+    # keep theta as 1 * n+1
+    theta = initialTheta
+    J_history = np.zeros((noOfIterations,1))
+    noOfIterations = int(noOfIterations)
+    for i in range(0, noOfIterations):
+        [cost, grad] = costAndGrad(theta, X, y)
+        J_history[i,0] = cost
+        theta = theta - alpha * grad;
+    return [theta, J_history]
+
+
+if __name__ == "__main__":
+
+    print("collecting data from test and train files")
+    train = np.genfromtxt("train.csv", delimiter=",")
+    train = train[1:, :]
+    test = np.genfromtxt("test.csv", delimiter=",")
+    test = test[1:, :]
+    [m, n] = train.shape
+    n = n-1
+    X = train[:, 0:-1]
+    y = np.array( [ train[:, n] ] )
+    y = y.T
+    # now X is m * n        and y is m * 1
+    print("data collected")
+
+    print("feature normalization")
+    [X, mu, sigma] = normalize(X)
+    print("features normalized")
+    X = np.c_[np.ones(m), X]
+    print("added ones column to X")
+    # now X is m * n+1
+
+    initialTheta = np.array([np.zeros(n+1)])
+    alpha = 1
+    noOfIterations = 25000
+    print("using alpha ", alpha, " and no of iterations ", noOfIterations)
+    print("starting gradientDescent")
+    [theta, J_history] = gradientDescent(initialTheta, X, y, alpha, noOfIterations)
+    print("gradientDescent completed")
+    predictedValuesTrain = sigmoid(np.matmul(X, theta.T)) >= 0.5
+    accuracyTrain = sum(predictedValuesTrain == y) / m * 100
+    print("accuracy train is ", accuracyTrain)
+    J_history = np.array(J_history)
+    print("plotting J_history whose final cost is ", J_history[-1])
+    plt.plot(J_history)
+    plt.xlabel('Number of iterations')
+    plt.ylabel('Cost')
+    plt.show()
+
+    [m_test, q] = test.shape
+    X_test = test[:, 0:-1]
+    X_test = (X_test - mu)/sigma
+    X_test = np.c_[np.ones(m_test), X_test]
+    y_test = np.array( [ test[:,n] ] )
+    y_test = y_test.T
+
+    # predictedValuesTest = np.array( [ np.zeros(m) ] ).T
+    # print(predictedValuesTest)
+    predictedValuesTest = sigmoid(np.matmul(X_test, theta.T)) >= 0.5
+    accuracyTest = sum( predictedValuesTest == y_test ) / m_test * 100
+    print("accuracy test is ", accuracyTest)
